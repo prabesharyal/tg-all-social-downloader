@@ -1,0 +1,43 @@
+{
+    "name":"Telegram-Tiktok-Url-Filter",
+    "description":"An python bot to download Public Videos/Audios from Links in Telegram Chat/Channel.",
+    "repository": "https://github.com/prabesharyal/tg-all-social-downloader",
+    "website":"https://prabesharyal.info.np",
+    "keywords":[
+        "python",
+        "telegram",
+        "group",
+        "auto",
+        "deletion",
+        "delete",
+        "deletor",
+        "bot",
+        "tiktok",
+        "url",
+        "filter",
+        "remover",
+        "python-telegram-bot",
+        "example"
+    ],
+    "env":{
+    "BOT_TOKEN": {
+        "description": "Enter Bot Token of your Bot from Telegram. "
+    },
+    "username": {
+        "description": "Enter your instagram username for instagram session. "
+    }
+
+    },
+
+    "buildpacks": [
+        {
+            "url":"https://github.com/heroku/heroku-buildpack-python.git"
+        },
+        {
+            "url":"https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git"
+        }
+    ]
+
+
+
+}
