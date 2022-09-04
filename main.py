@@ -183,11 +183,11 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 if re.match(r"(https:\/\/)([vt]+)\.([tiktok]+)\.([com]{2,6})([\/\w@?=&\.-]*)", URLS):
                     r = requests.head(URLS, allow_redirects=False)
                     URLS = r.headers['Location']
-                    with yt_dlp.YoutubeDL({'ignoreerrors': True}) as ydl:
+                    with yt_dlp.YoutubeDL({'ignoreerrors': True, 'trim_file_name' : 100}) as ydl:
                         error_code = ydl.download(URLS)
                 else:
                     URLS=URLS
-                    with yt_dlp.YoutubeDL({'max_filesize':50*1024*1024, 'format_sort': ['res:1080', 'ext:mp4:m4a']}) as ydl:
+                    with yt_dlp.YoutubeDL({'max_filesize':50*1024*1024, 'trim_file_name' : 100, 'format_sort': ['res:1080', 'ext:mp4:m4a']}) as ydl:
                         error_code = ydl.download(URLS)
 
                 downloaded_files = os.listdir('./')
