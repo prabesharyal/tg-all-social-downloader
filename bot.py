@@ -41,11 +41,11 @@ def clean_clutter():
     print("Removing If any Previously unused files.")
     for files in os.listdir():    
         if files.endswith(('py','json','Procfile','txt','text','pip','git','pycache','cache','session','vendor','profile.d','heroku'))==False:
-            if os.path.isdir(files) == True and (files =='Stories' or files == SHORTCODE):
+            if os.path.isdir(files) == True: #and (files =='Stories' or files == SHORTCODE):
                 print("Removing Dir : {}".format(files))
                 shutil.rmtree(files)
-            elif os.path.isdir(files) == True:
-                print("Skipping Dir : {}".format(files))
+            #elif os.path.isdir(files) == True:
+                #print("Skipping Dir : {}".format(files))
             else:
                 os.remove(files)
                 print("Removed File : {}".format(files))
@@ -238,7 +238,6 @@ def yt_dlp_tiktok_dl(URLS):
     return CAPTION
 
 def yt_dlp_ig_failsafe_dl(URLS):
-    r = requests.head(URLS, allow_redirects=False)
     ydl_opts = {'ignoreerrors': True, 'trim_file_name' : 25}
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(URLS)
@@ -440,6 +439,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     except BaseException:
                         await context.bot.send_message(chat_id=update.message.chat.id, text='Maybe Login is required for this post.\n\n Send /iglogin to login using your credentials and try again.',parse_mode='Markdown')
                 if downloadmode == 'instaloader_nologin':
+                    print("Instaloader Session without Login is trying ....")
                     if re.match(r"((?:http|https):\/\/)(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(p|tv|reel)\/([\w\-/?=&]+)",URLS):
                         CAPTION, downloads, SHORTCODE = simple_ig_dl(URLS)
                         await ig_tg_sender(update, context, CAPTION, downloads, SHORTCODE)
