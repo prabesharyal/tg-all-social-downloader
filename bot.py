@@ -198,7 +198,7 @@ async def ig_tg_sender(update,context,CAPTION, downloads, SHORTCODE):
         try:
             for remaints in downloads:
                 os.remove(remaints)
-            os.rmdir(SHORTCODE)
+            os.rmdir(SHORTCODE) if SHORTCODE != '' else print('In root directory, so no need of removing any folder.')
         except:
             print("Some error while removing instagram files")
         print("Clean Success!")
@@ -213,7 +213,7 @@ async def ig_tg_sender(update,context,CAPTION, downloads, SHORTCODE):
                     await context.bot.delete_message(chat_id=update.message.chat.id, message_id=update.message.message_id)
                 except BaseException:
                     print("Message was already deleted.")
-                os.rmdir(SHORTCODE)	
+                os.rmdir(SHORTCODE) if SHORTCODE != '' else print('In root directory, so no need of removing any folder.')	
             elif post.endswith(".jpg"):
                 await context.bot.send_photo(chat_id = update.message.chat.id, photo=open(post, 'rb'), caption=CAPTION, parse_mode='HTML')
                 time.sleep(1)
@@ -222,7 +222,7 @@ async def ig_tg_sender(update,context,CAPTION, downloads, SHORTCODE):
                     await context.bot.delete_message(chat_id=update.message.chat.id, message_id=update.message.message_id)
                 except BaseException:
                     print("Message was already deleted.")
-                os.rmdir(SHORTCODE)	
+                os.rmdir(SHORTCODE) if SHORTCODE != '' else print('In root directory, so no need of removing any folder.')	
         else:
             print('Instagram Task Done')
 
@@ -244,7 +244,13 @@ def yt_dlp_ig_failsafe_dl(URLS):
         video_title = info['description']
     video_title = "✨" if video_title == '' else video_title
     CAPTION = '<a href="{}">{}</a>'.format(URLS,video_title)
-    return CAPTION
+    downloaded_files = os.listdir("./")
+    downloads = []
+    for files in downloaded_files:
+        if files.endswith(('avi', 'flv', 'mkv', 'mov', 'mp4', 'webm', '3g2', '3gp', 'f4v', 'mk3d', 'divx', 'mpg', 'ogv', 'm4v', 'wmv')):
+            downloads.append(files)
+    SHORTCODE = ''
+    return CAPTION, downloads, SHORTCODE
 
 def yt_dlp_youtube_dl(URLS):
     ydl_opts = {'trim_file_name' : 20,'max_filesize':50*1024*1024, 'format_sort': ['res:1080','ext:mp4:m4a']}
@@ -448,8 +454,8 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             except BaseException:
                 print("Instaloader Module Failed, retrying with yt-dlp")
                 try:
-                    CAPTION = yt_dlp_ig_failsafe_dl(URLS)
-                    await yt_dlp_sender(update,context,CAPTION)
+                    CAPTION, downloads, SHORTCODE = yt_dlp_ig_failsafe_dl(URLS)
+                    await ig_tg_sender(update, context, CAPTION, downloads, SHORTCODE)
                 except BaseException:
                     print("yt-dlp module too failed downloading this video. \n Maybe not a video or private one.")
         
