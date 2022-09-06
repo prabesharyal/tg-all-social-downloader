@@ -21,7 +21,7 @@ API_HASH = os.environ.get('BOT_TOKEN')
 
 ig_USER = ''
 ig_PASS = ''
-
+SHORTCODE = ''
 def ig_num_id(link):
     userid=(link.split('/'))[4]
     resp = (requests.get('https://www.instagram.com/'+userid)).text
@@ -41,9 +41,11 @@ def clean_clutter():
     print("Removing If any Previously unused files.")
     for files in os.listdir():    
         if files.endswith(('py','json','Procfile','txt','text','pip','git','pycache','cache','session','vendor','profile.d'))==False:
-            if os.path.isdir(files) == True:
+            if os.path.isdir(files) == True and (files =='Stories' or files == SHORTCODE):
                 print("Removing Dir : {}".format(files))
                 shutil.rmtree(files)
+            elif os.path.isdir(files) == True:
+                print("Skipping Dir : {}".format(files))
             else:
                 os.remove(files)
                 print("Removed File : {}".format(files))
