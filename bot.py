@@ -40,7 +40,7 @@ def convert_html(string):
 def clean_clutter():
     print("Removing If any Previously unused files.")
     for files in os.listdir():    
-        if files.endswith(('py','json','Procfile','txt','text','pip','git','pycache','cache','session','vendor','profile.d'))==False:
+        if files.endswith(('py','json','Procfile','txt','text','pip','git','pycache','cache','session','vendor','profile.d','heroku'))==False:
             if os.path.isdir(files) == True and (files =='Stories' or files == SHORTCODE):
                 print("Removing Dir : {}".format(files))
                 shutil.rmtree(files)
