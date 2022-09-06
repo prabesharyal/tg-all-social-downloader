@@ -319,7 +319,10 @@ async def yt_dlp_sender(update,context,CAPTION):
         else:
             print(files + "is "+str(size)+" MB."+"\n"+"Which is greater than 50 MB, So removing it !!")
             os.remove(files)
-
+    try:
+        await context.bot.delete_message(chat_id=update.message.chat.id, message_id=update.message.message_id)
+    except BaseException:
+        print("Yt-DLP Sender, Message was already deleted.")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
