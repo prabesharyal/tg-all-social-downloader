@@ -234,6 +234,7 @@ def yt_dlp_tiktok_dl(URLS):
         info = ydl.extract_info(URLS)
         video_title = info['title']
     video_title = "✨" if video_title == '' else video_title
+    video_title = convert_html(video_title)
     CAPTION = '<a href="{}">{}</a>'.format(URLS,video_title)
     return CAPTION
 
@@ -243,6 +244,7 @@ def yt_dlp_ig_failsafe_dl(URLS):
         info = ydl.extract_info(URLS)
         video_title = info['description']
     video_title = "✨" if video_title == '' else video_title
+    video_title = convert_html(video_title)
     CAPTION = '<a href="{}">{}</a>'.format(URLS,video_title)
     downloaded_files = os.listdir("./")
     downloads = []
@@ -258,6 +260,7 @@ def yt_dlp_youtube_dl(URLS):
         info = ydl.extract_info(URLS)
         video_title = info['title']
     video_title = "✨" if video_title == '' else video_title
+    video_title = convert_html(video_title)
     CAPTION = '<a href="{}">{}</a>'.format(URLS,video_title)
     return CAPTION
 
@@ -280,6 +283,7 @@ def yt_dlp_Others_dl(URLS):
         info = ydl.extract_info(URLS)
         video_title = info['title']
     video_title = "✨" if video_title == '' else video_title
+    video_title = convert_html(video_title)
     CAPTION = '<a href="{}">{}</a>'.format(URLS,video_title)
     return CAPTION
 
@@ -343,7 +347,7 @@ async def clean(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     ig_PASS = ''
     L = None
     await context.bot.delete_message(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    await context.bot.send_message(chat_id=update.message.chat.id, text='Server is ***virgin*** again.',parse_mode='Markdown')
+    await context.bot.send_message(chat_id=update.message.chat.id, text='Server is <b>virgin</b> again.',parse_mode='HTML')
 
 async def iglogin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
@@ -408,7 +412,7 @@ async def iglogout(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     ig_PASS = ''
     L = None
     print("Server clean was success.")
-    await context.bot.send_message(chat_id=update.message.chat.id, text='Removed credentials Successfully. \n \n Send /igcheck to look if your credentials are removed or not.',parse_mode='Markdown')
+    await context.bot.send_message(chat_id=update.message.chat.id, text='Removed credentials Successfully. \n \n Send /igcheck to look if your credentials are removed or not.',parse_mode='HTML')
 
 async def igcheck(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print( "User Id is : "+ ig_USER)
@@ -443,7 +447,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         CAPTION, downloads, SHORTCODE = igdl_posts_pri(URLS)
                         await ig_tg_sender(update, context, CAPTION, downloads, SHORTCODE)
                     except BaseException:
-                        await context.bot.send_message(chat_id=update.message.chat.id, text='Maybe Login is required for this post.\n\n Send /iglogin to login using your credentials and try again.',parse_mode='Markdown')
+                        await context.bot.send_message(chat_id=update.message.chat.id, text='Maybe Login is required for this post.\n\n Send /iglogin to login using your credentials and try again.',parse_mode='HTML')
                 if downloadmode == 'instaloader_nologin':
                     print("Instaloader Session without Login is trying ....")
                     if re.match(r"((?:http|https):\/\/)(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(p|tv|reel)\/([\w\-/?=&]+)",URLS):
