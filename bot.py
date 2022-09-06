@@ -3,6 +3,7 @@
 from ast import main
 import os, shutil, time, re, logging, requests
 
+
 #import downloaders
 import yt_dlp
 import instaloader
@@ -41,7 +42,8 @@ def clean_clutter():
     for files in os.listdir():    
         if files.endswith(('py','json','Procfile','txt','text','pip','git','pycache','cache','session','vendor','profile.d'))==False:
             if os.path.isdir(files) == True:
-                print("Skipping Dir : {}".format(files))
+                print("Removing Dir : {}".format(files))
+                shutil.rmtree(files)
             else:
                 os.remove(files)
                 print("Removed File : {}".format(files))
@@ -77,7 +79,7 @@ def ins_instance_login():
             print("Base Exception on Login By password")
             L.load_session_from_file(username = ig_session_USER,filename = '{}.session'.format(ig_session_USER))
     else:
-        print("Loaded session as normal file")
+        print("Loading session as normal file")
         L.load_session_from_file(username = ig_session_USER,filename = '{}.session'.format(ig_session_USER))
     return L
 
@@ -93,8 +95,11 @@ def igdl_story(link): #Story downloader
         for item in story.get_items():
             # item is a StoryItem object
             L.download_storyitem(item, SHORTCODE)
-    
-    downloaded_files = os.listdir("./{}/".format(SHORTCODE))
+    try:
+        downloaded_files = os.listdir("./{}/".format(SHORTCODE))
+    except FileNotFoundError:
+        print("Stories were Never downloaded.")
+        return FileNotFoundError
     downloads = []
     for lists in downloaded_files:
         files = os.path.join("./{}/".format(SHORTCODE),lists)
@@ -230,13 +235,36 @@ def yt_dlp_tiktok_dl(URLS):
     CAPTION = '<a href="{}">{}</a>'.format(URLS,video_title)
     return CAPTION
 
+def yt_dlp_ig_failsafe_dl(URLS):
+    r = requests.head(URLS, allow_redirects=False)
+    ydl_opts = {'ignoreerrors': True, 'trim_file_name' : 25}
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(URLS)
+        video_title = info['description']
+    video_title = "✨" if video_title == '' else video_title
+    CAPTION = '<a href="{}">{}</a>'.format(URLS,video_title)
+    return CAPTION
+
 def yt_dlp_youtube_dl(URLS):
-    ydl_opts = {'trim_file_name' : 20,'max_filesize':50*1024*1024, 'format_sort': ['res:1080', 'ext:mp4:m4a']}
+    ydl_opts = {'trim_file_name' : 20,'max_filesize':50*1024*1024, 'format_sort': ['res:1080','ext:mp4:m4a']}
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(URLS)
         video_title = info['title']
     video_title = "✨" if video_title == '' else video_title
     CAPTION = '<a href="{}">{}</a>'.format(URLS,video_title)
+    return CAPTION
+
+def yt_dlp_youtube_audio_dl(URLS):
+    ydl_opts = {'format': 'm4a/bestaudio/best',
+    # ℹ️ See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
+    'postprocessors': [{  # Extract audio using ffmpeg
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',}]}
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(URLS)
+        audio_title = info['title']
+    audio_title = "✨" if audio_title == '' else audio_title
+    CAPTION = '<a href="{}">{}</a>'.format(URLS,audio_title)
     return CAPTION
 
 def yt_dlp_Others_dl(URLS):
@@ -295,7 +323,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     print(update.message['text']+" - Help Command Issued")
     await context.bot.delete_message(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    await context.bot.send_message(chat_id=update.message.chat.id, text='''<b><u> A lot of help commands available.</u></b>\n \n <code>/start</code> - <i>Check whether bot is working or not.</i>\n    <code>/help</code> - <i>This menu is displayed.</i>\n    <code>/clean</code> - <i>Resets the bot server to the deployment time.</i>\n\n<b><u> Some Instagram module commands:</u></b>\n     <code>/iglogin</code> - <i>Displays instagram related commands.</i>\n    <code>/igusername</code> - <i>Sets instagram username.</i>\n    <code>/igpassword</code> - <i>Sets instagram password.</i>\n    <code>/iglogout</code> - <i>Log out of instagram account and cleans your data on server.</i>\n    <code>/igcheck</code> - <i>Shows if any username or password are on server.</i>\n\n \n    <b>Any Sort of Public Video Links </b> - <i>Sends you video using that link.</i>\n\n<i>Note : </i><u>Two Step Verification must be turned off! and this feature always don't work as Instagram limits on account access from new IP.</u>    <code>/igstories username</code> - <i>Sends stories of the user mentioned using pre-installed credentials.</i> \n\n <b>Isn't this help enough ???</b>''',parse_mode='HTML')
+    await context.bot.send_message(chat_id=update.message.chat.id, text='''<b><u> A lot of help commands available.</u></b>\n \n    <code>/start</code> - <i>Check whether bot is working or not.</i>\n    <code>/help</code> - <i>This menu is displayed.</i>\n    <code>/clean</code> - <i>Resets the bot server to the deployment time.</i>\n\n<b><u> Some Instagram module commands:</u></b>\n     <code>/iglogin</code> - <i>Displays instagram related commands.</i>\n    <code>/igusername</code> - <i>Sets instagram username.</i>\n    <code>/igpassword</code> - <i>Sets instagram password.</i>\n    <code>/iglogout</code> - <i>Log out of instagram account and cleans your data on server.</i>\n    <code>/igcheck</code> - <i>Shows if any username or password are on server.</i>\n    <code>/igstories username</code> - <i>Sends stories of the user mentioned using pre-installed credentials.</i> \n\n<i>Note : </i><u>Two Step Verification must be turned off! and this feature always don't work as Instagram limits on account access from new IP.</u>\n\n    \n \n    <b>Any Sort of Public Video Links </b> - <i>Sends you video upto 50MB using that link.</i>\n\n    <code>/ytaudio </code><u>your_youtube_link</u> - <i>Sends audio from link.</i> \n\n\n<b>Isn't this help enough ???</b>''',parse_mode='HTML')
 
 #''''''
 
@@ -320,7 +348,7 @@ async def iglogin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=update.message.chat.id, text='<code>/igusername </code><u>username</u> \n <code>/igpassword </code><u>password</u> \n \n <b>To Logout :</b>\n Simply send /iglogout command.\n\n <b>To Check :</b>\n Simply send /igcheck command.',parse_mode='HTML')    
 
 async def igusername(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /help is issued."""
+    """Send a message when the command /igusername is issued."""
     global ig_USER
     ig_USER =((update.message['text']).split(" "))[1]
     igusername = ig_USER
@@ -347,8 +375,22 @@ async def igstories(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print( "User pass is : "+ astpass)
     #await context.bot.send_message(chat_id=update.message.chat.id, text='<b><u>The credentials in server are :</u></b> \n     <b>Username : </b><code>{}</code>\n     <b>Password: </b><code>{}</code> \n \n Server will use it until you logout manually by issuing /iglogout command. \n\n For now downloading stories from {}. \n\n<i>Note : </i><u>Two Step Verification must be turned off for actually making the Bot work!</u>'.format(ig_USER, astpass,storyof),parse_mode='HTML')
     URLS = 'https://www.instagram.com/stories/{}/'.format(storyof)
-    CAPTION, downloads, SHORTCODE = igdl_story(URLS)
-    await ig_tg_sender(update, context, CAPTION, downloads, SHORTCODE)
+    try:
+        CAPTION, downloads, SHORTCODE = igdl_story(URLS)
+        await ig_tg_sender(update, context, CAPTION, downloads, SHORTCODE)
+    except FileNotFoundError:
+        print("Stories were not downloaded.")
+        await context.bot.send_message(chat_id=update.message.chat.id, text="Sorry, Couldn't download stories of user {} . \n Some Error Occurred (╥_╥)".format(storyof),parse_mode='HTML')
+
+async def yt_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    link = (((update.message['text']).split(" "))[1])
+    print("Through Yt-audio downloader")
+    try :
+        CAPTION = yt_dlp_youtube_audio_dl(link)
+        await yt_dlp_sender(update,context,CAPTION)
+    except BaseException:
+        print("Audio Download Error")
+        await context.bot.send_message(chat_id=update.message.chat.id, text="Sorry, Couldn't download audio of from given link : <code>{}</code> . \n Check link again and make sure if it works.".format(link),parse_mode='HTML')
 
 
 async def iglogout(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -384,8 +426,11 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             try:
                 downloadmode = instagram_dl_selector(URLS)
                 if downloadmode == 'instaloader_login_story':
-                    CAPTION, downloads, SHORTCODE = igdl_story(URLS)
-                    await ig_tg_sender(update, context, CAPTION, downloads, SHORTCODE)
+                    try:
+                        CAPTION, downloads, SHORTCODE = igdl_story(URLS)
+                        await ig_tg_sender(update, context, CAPTION, downloads, SHORTCODE)
+                    except FileNotFoundError:
+                        print("Stories were not downloaded.")
                 if downloadmode == 'instaloader_login_postsreels':
                     try:
                         CAPTION, downloads, SHORTCODE = igdl_posts_pri(URLS)
@@ -401,7 +446,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             except BaseException:
                 print("Instaloader Module Failed, retrying with yt-dlp")
                 try:
-                    CAPTION = yt_dlp_tiktok_dl(URLS)
+                    CAPTION = yt_dlp_ig_failsafe_dl(URLS)
                     await yt_dlp_sender(update,context,CAPTION)
                 except BaseException:
                     print("yt-dlp module too failed downloading this video. \n Maybe not a video or private one.")
@@ -435,6 +480,9 @@ def main() -> None:
     application.add_handler(CommandHandler("iglogout", iglogout))
     application.add_handler(CommandHandler("igcheck", igcheck))
     application.add_handler(CommandHandler("igstories", igstories))
+
+    #youtube music
+    application.add_handler(CommandHandler("ytaudio", yt_audio))
 
     #For other links
     application.add_handler(MessageHandler(filters.Regex('([^\s\.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})') & ~filters.COMMAND, download))
