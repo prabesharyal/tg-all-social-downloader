@@ -17,13 +17,13 @@
         "filter",
         "remover",
         "python-telegram-bot",
-        "example"
-    ],
+        "example",
+    "instagram"    ],
     "env":{
     "BOT_TOKEN": {
         "description": "Enter Bot Token of your Bot from Telegram. "
     },
-    "username": {
+    "ig_session": {
         "description": "Enter your instagram username for instagram session. "
     }
 
