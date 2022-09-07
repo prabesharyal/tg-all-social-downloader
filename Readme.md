@@ -48,7 +48,7 @@ This bot is make specifically for one purpose. That is to monitor Telegram Group
 
 ## Instagram Session File and username<a name="2.2"></a>
 - `ig_session` is your Instagram username.
-- You can get your instagram session file `username.session` by running this [Session Generator File](https://github.com/prabesharyal/tg-all-social-downloader/blob/main/extra/ig_session_gen.py) locally.
+- You can get your instagram session file `username.session` by running this [Session Generator File](https://github.com/prabesharyal/tg-all-social-downloader/blob/main/extra/session_generator.py) locally.
 >- While deploying place Session File in same directory of your `bot.py` and set `ig_session` as variable. If you don't want logins, just leave `ig_session` variable empty in environment variable field.
 
 <br>
