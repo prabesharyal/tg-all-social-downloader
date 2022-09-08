@@ -393,14 +393,7 @@ async def rmsessionfile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def igstories(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     messeger = str((update._effective_user['id']))
-    global ig_session_file, ig_session_USER
-    ig_session_file = messeger+"#"+ig_session_USER+".session"
-    if await ig_session_check(update, context) == False:
-        try:
-            ig_session_USER,ig_session_file = login_from_saved_sessions(update, context)
-        except BaseException:
-            ig_session_USER,ig_session_file = '',''
-            print("User not registered for posts downloads.")
+    global ig_session_file
     ig_session_file = messeger+"#"+ig_session_USER+".session"
     storyof = (((update.message['text']).split(" "))[1])
     print( "Account used for stories is : "+ ig_session_USER)
