@@ -22,9 +22,6 @@
     "env":{
     "BOT_TOKEN": {
         "description": "Enter Bot Token of your Bot from Telegram. "
-    },
-    "ig_session": {
-        "description": "Enter your instagram username for instagram session. "
     }
 
     },

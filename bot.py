@@ -15,12 +15,10 @@ from instaloader import Post
 from telegram import *
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
-ig_session_USER = os.environ.get('ig_session')
-
 API_HASH = os.environ.get('BOT_TOKEN')
+ig_session_USER = ''
+ig_session_file = ''
 
-ig_USER = ''
-ig_PASS = ''
 SHORTCODE = ''
 def ig_num_id(link):
     userid=(link.split('/'))[4]
@@ -51,11 +49,8 @@ def clean_clutter():
                 print("Removed File : {}".format(files))
 
 def check_ig_login():
-    global ig_USER
-    if ig_USER != '' and ig_PASS != '':
-        return True
     for files in os.listdir():
-        if files.endswith('session') and files =="{}.session".format(ig_session_USER):
+        if files.endswith('session') and files ==ig_session_file:
             return True
     return False
 
@@ -73,16 +68,11 @@ def instagram_dl_selector(url):
 #instaloader Instance
 def ins_instance_login():
     L = instaloader.Instaloader(download_video_thumbnails=False, save_metadata=False)
-    if ig_USER != '' and ig_PASS != '':
-        try:
-            L.login(ig_USER, ig_PASS)
-            print("Logged in using credentials of : "+ig_USER)
-        except BaseException:
-            print("Base Exception on Login By password")
-            L.load_session_from_file(username = ig_session_USER,filename = '{}.session'.format(ig_session_USER))
-    else:
+    try:
         print("Loading session as normal file")
-        L.load_session_from_file(username = ig_session_USER,filename = '{}.session'.format(ig_session_USER))
+        L.load_session_from_file(username = ig_session_USER,filename = ig_session_file)
+    except BaseException:
+        print("Login Using Sessionfile Failed.")
     return L
 
 
@@ -227,8 +217,9 @@ async def ig_tg_sender(update,context,CAPTION, downloads, SHORTCODE):
             print('Instagram Task Done')
 
 def yt_dlp_tiktok_dl(URLS):
-    r = requests.head(URLS, allow_redirects=False)
-    URLS = r.headers['Location']
+    if re.match(r"(?:https:\/\/)?([vt]+)\.([tiktok]+)\.([com]+)\/([\/\w@?=&\.-]+)", URLS):
+        r = requests.head(URLS, allow_redirects=False)
+        URLS = r.headers['Location']
     ydl_opts = {'ignoreerrors': True, 'trim_file_name' : 25}
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(URLS)
@@ -337,57 +328,75 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     print(update.message['text']+" - Help Command Issued")
     await context.bot.delete_message(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    await context.bot.send_message(chat_id=update.message.chat.id, text='''<b><u> A lot of help commands available.</u></b>\n \n    <code>/start</code> - <i>Check whether bot is working or not.</i>\n    <code>/help</code> - <i>This menu is displayed.</i>\n    <code>/clean</code> - <i>Resets the bot server to the deployment time.</i>\n\n<b><u> Some Instagram module commands:</u></b>\n     <code>/iglogin</code> - <i>Displays instagram related commands.</i>\n    <code>/igusername</code> - <i>Sets instagram username.</i>\n    <code>/igpassword</code> - <i>Sets instagram password.</i>\n    <code>/iglogout</code> - <i>Log out of instagram account and cleans your data on server.</i>\n    <code>/igcheck</code> - <i>Shows if any username or password are on server.</i>\n    <code>/igstories username</code> - <i>Sends stories of the user mentioned using pre-installed credentials.</i> \n\n<i>Note : </i><u>Two Step Verification must be turned off! and this feature always don't work as Instagram limits on account access from new IP.</u>\n\n    \n \n    <b>Any Sort of Public Video Links </b> - <i>Sends you video upto 50MB using that link.</i>\n\n    <code>/ytaudio </code><u>your_youtube_link</u> - <i>Sends audio from link.</i> \n\n\n<b>Isn't this help enough ???</b>''',parse_mode='HTML')
+    await context.bot.send_message(chat_id=update.message.chat.id, text='''<b><u> A lot of help commands available.</u></b>\n \n    <code>/start</code> - <i>Check whether bot is working or not.</i>\n    <code>/help</code> - <i>This menu is displayed.</i>\n    <code>/clean</code> - <i>Resets the bot server to the deployment time (doesn't delete session files).</i>\n\n<b><u> Some Instagram module commands:</u></b>\n     <code>/iglogin</code> - <i>Guides you throughly Instagram Login process.</i>\n    <code>/iglogout</code> - <i>Log out of instagram account (doesn't delete session files).</i>\n    <code>/igcheck</code> - <i>Shows which account is being used.</i>\n    <code>/igstories username</code> - <i>Sends stories of the user mentioned using your session file.</i>\n /igsession - <i>Sends session generator code written in Python.</i>\n     <code>/rmigsession username</code> - <i>Deletes your session file from server.</i>\n \n    <b>Any Sort of Public Video Links </b> - <i>Sends you video upto 50MB using that link.</i>\n\n    <code>/ytaudio </code><u>your_youtube_link</u> - <i>Sends audio from link.</i> \n\n\n<b>Isn't this help enough ???</b>''',parse_mode='HTML')
 
 #''''''
 
 async def clean(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /clean is issued."""
-    global ig_PASS, ig_USER, L
     clean_clutter()
     print("Server clean was success.")
-    ig_USER = ''
-    ig_PASS = ''
+    ig_session_USER = ''
     L = None
     await context.bot.delete_message(chat_id=update.message.chat.id, message_id=update.message.message_id)
     await context.bot.send_message(chat_id=update.message.chat.id, text='Server is <b>virgin</b> again.',parse_mode='HTML')
 
+async def sessiondownload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print("Received Session File : " + update.message.document.file_name)
+    messeger = str((update._effective_user['id']))
+    if int(update.message.document.file_size) <= 1000:
+        file_name=update.message.document.file_name
+        file_id = update.message.document.file_id
+        newFile = await context.bot.get_file(file_id)
+        await newFile.download(messeger+"#"+file_name)
+        await context.bot.send_message(chat_id=update.message.chat.id, text="<b>Session File <code>{}</code> Received!</b> \n \n If you want to use your session for downloading posts/stories, just send <code>/iglogin username</code> command. \n\n Other commands: \n <b>To Logout :</b>\n Simply send /iglogout command.\n <b>To Check :</b>\n Simply send /igcheck command.".format(file_name),parse_mode='HTML')
+
+def check_old_session(ig_session_file):
+    old_session= False
+    for files in os.listdir("./"):
+        if files.endswith(('session')):
+            if files ==ig_session_file:
+                old_session = True
+                return old_session
+
+
 async def iglogin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /start is issued."""
-    '''await update.message.reply_html(
-        rf"Dear {user.mention_html()}, Bot is active bro upto this moment, solve next step!.",
-        reply_markup=ForceReply(selective=True),)'''
+    global ig_session_USER,  ig_session_file
+    ig_session_USER = (((update.message['text']).split(" "))[1]).lower()
+    messeger = str((update._effective_user['id']))
+    ig_session_file = messeger+"#"+ig_session_USER+".session"
+    if check_old_session(ig_session_file)==True:
+        await context.bot.send_message(chat_id=update.message.chat.id, text="<b>Session File Already Exists!</b> \n \n If you want to use your old session for user <code>{}</code>, just ignore this message. \n\n If you want to replace with new session file, Simply send a new session file in format <u>username.session</u> \n If you need session generator file again send /igsession".format(ig_session_USER),parse_mode='HTML')
+    else:
+        await sessiongenerator(update,context)
+
+async def sessiongenerator(update,context):
     await update.message.reply_html(
-        rf"Dear {update.effective_user.mention_html()}, Enter your username and password in given formats!", reply_markup=ForceReply(selective=True))
-    await context.bot.send_message(chat_id=update.message.chat.id, text='<code>/igusername </code><u>username</u> \n <code>/igpassword </code><u>password</u> \n \n <b>To Logout :</b>\n Simply send /iglogout command.\n\n <b>To Check :</b>\n Simply send /igcheck command.',parse_mode='HTML')    
+                    rf"Dear {update.effective_user.mention_html()}, Send a session file generated by running the session generator file sent below.", reply_markup=ForceReply(selective=True))
+    await context.bot.send_document(chat_id=update.message.chat.id, document = open('session_generator.py','rb'),caption = '<b>After sending session files, you can use these command to do different tasks</b>\n \n <b>To Log In :</b>\n Simply send <code>/iglogin username</code> command.\n <b>To Logout :</b>\n Simply send <code>/iglogout username</code>command.\n <b>To Check :</b>\n Simply send /igcheck command.\n <b>To Remove Session File :</b>\n Simply send <code>/rmigsession username</code> command. \n\n <b>For full list of commands :</b>\n Simply send /help command.',parse_mode='HTML')
 
-async def igusername(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /igusername is issued."""
-    global ig_USER
-    ig_USER =((update.message['text']).split(" "))[1]
-    igusername = ig_USER
-    print("Received username  : "+ igusername)
-    await context.bot.send_message(chat_id=update.message.chat.id, text='Your username for instagram is : <b>{}</b> \n \n If it is incorrect, send again using same format. \n \n Send <code>/igpassword </code> <b>yourpassword</b> to enter password \n \n<i>Note : </i><u>Two Step Verification must be turned off!</u>'.format(igusername),parse_mode='HTML')
+async def sessiongen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await sessiongenerator(update,context)
 
-async def igpassword(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /igpassword is issued."""
-    global ig_PASS
-    ig_PASS = (((update.message['text']).split(" "))[1])
-    print("Password too received!")
-    astpass = ''
-    for char in ig_PASS:
-        astpass += "*"
-    await context.bot.delete_message(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    await context.bot.send_message(chat_id=update.message.chat.id, text='Your password : {}  was received. \n \n Send links of posts or stories to download using that password. Server will use it until you logout manually by issuing /iglogout command.\n\n<i>Note : </i><u>Two Step Verification must be turned off for actually making the Bot work!</u>'.format(astpass),parse_mode='HTML')
+async def rmsessionfile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global ig_session_USER,  ig_session_file
+    ig_session_USER = (((update.message['text']).split(" "))[1])
+    messeger = str((update._effective_user['id']))
+    ig_session_file = messeger+"#"+ig_session_USER+".session"
+    for files in os.listdir("./"):
+        if files.endswith(('session')):
+            if files ==ig_session_file:
+                os.remove(ig_session_file)
+                await context.bot.send_message(chat_id=update.message.chat.id, text="<b>Session File of user : {} Removed Successfully!</b> \n \n If you want to use your session again just start from <code>/iglogin username</code>. \n\n\n If you need session generator file again send /sessiongenerator".format(ig_session_USER),parse_mode='HTML')
+    ig_session_USER = ''
+    ig_session_file = ''
 
 async def igstories(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    messeger = str((update._effective_user['id']))
+    global ig_session_file
+    ig_session_file = messeger+"#"+ig_session_USER+".session"
     storyof = (((update.message['text']).split(" "))[1])
-    print( "User Id is : "+ ig_USER)
-    astpass =''
-    for char in ig_PASS:
-        astpass += "*"
-    print( "User pass is : "+ astpass)
-    #await context.bot.send_message(chat_id=update.message.chat.id, text='<b><u>The credentials in server are :</u></b> \n     <b>Username : </b><code>{}</code>\n     <b>Password: </b><code>{}</code> \n \n Server will use it until you logout manually by issuing /iglogout command. \n\n For now downloading stories from {}. \n\n<i>Note : </i><u>Two Step Verification must be turned off for actually making the Bot work!</u>'.format(ig_USER, astpass,storyof),parse_mode='HTML')
+    print( "Account used for stories is : "+ ig_session_USER)
     URLS = 'https://www.instagram.com/stories/{}/'.format(storyof)
     try:
         CAPTION, downloads, SHORTCODE = igdl_story(URLS)
@@ -408,24 +417,99 @@ async def yt_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def iglogout(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /help is issued."""
+    """Send a message when the command /iglogout is issued."""
     clean_clutter()
-    global ig_USER, ig_PASS, L
-    ig_USER = ''
-    ig_PASS = ''
-    L = None
-    print("Server clean was success.")
-    await context.bot.send_message(chat_id=update.message.chat.id, text='Removed credentials Successfully. \n \n Send /igcheck to look if your credentials are removed or not.',parse_mode='HTML')
+    global ig_session_USER,  ig_session_file
+    ig_session_USER1 = (((update.message['text']).split(" "))[1]).lower()
+    messeger = str((update._effective_user['id']))
+    ig_session_file1 = messeger+"#"+ig_session_USER+".session"
+    if ig_session_file1 == ig_session_file:
+        ig_session_USER = ''
+        ig_session_file = ''
+        L = None
+        print("Server clean was success.")
+        await context.bot.send_message(chat_id=update.message.chat.id, text='Removed credentials Successfully. \n \n Send /igcheck to look if your credentials are removed or not.',parse_mode='HTML')
+    else:
+        await context.bot.send_message(chat_id=update.message.chat.id, text='You are not logged in to log out.',parse_mode='HTML')
 
 async def igcheck(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    print( "User Id is : "+ ig_USER)
-    astpass =''
-    for char in ig_PASS:
-        astpass += "*"
-    print( "User pass is : "+ astpass)
-    await context.bot.send_message(chat_id=update.message.chat.id, text='<b><u>The data in server is :</u></b> \n     <b>Username : </b><code>{}</code>\n     <b>Password : </b><code>{}</code> \n \n Server will use it until you logout manually by issuing /iglogout command.\n\n<i>Note : </i><u>Two Step Verification must be turned off for actually making the Bot work!</u>'.format(ig_USER, astpass),parse_mode='HTML')
+    messeger = str((update._effective_user['id']))
+    #ig_session_file = messeger+"#"+ig_session_USER+".session"
+    #print(ig_session_file)
+    igusername = []
+    igactivestatus = False
+    for files in os.listdir():
+        if files.endswith('session'):
+            igusernames = files.split("#")
+            if igusernames[0]==messeger:
+                igusername.append((igusernames[1])[:-8])
+    if len(igusername) >= 1:
+        a = 0
+        igusrformat = ''
+        
+        for listedigusername in igusername:
+            igusrformat = igusrformat + "    • " +listedigusername+"\n"
+            #print ("Ig sesssion : "+ ig_session_USER)
+            # ("listed one : "+ listedigusername)
+            if ig_session_USER == listedigusername:
+                igactivestatus = True
+        if igactivestatus == True:
+            await context.bot.send_message(chat_id=update.message.chat.id, text="""<b><u>Currently used account for sending posts is :</u></b> \n\n     <b>Username : </b><code>{}</code>\n\n Server won't use until you login by yourself.\n\n All of your available accounts are listed below : \n {} \n\nFor all available options, simply send /help command.""".format(ig_session_USER,igusrformat),parse_mode='HTML')
+        elif igactivestatus == False:
+            await context.bot.send_message(chat_id=update.message.chat.id, text="""<b>None</b> of your accounts are currently in use for downloading posts and stories.\n\nServer won't use until you login by yourself.\n\n All of your available accounts are listed below : \n {} \n\nFor all available options, simply send /help command.""".format(igusrformat),parse_mode='HTML')
+    else:
+        await context.bot.send_message(chat_id=update.message.chat.id, text="""You don't have any accounts saved here! \n \n To add, just send <code>/iglogin username</code> command and follow further steps. \n\n Send /help command to list all available commands.""",parse_mode='HTML')
 
-async def download(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def ig_session_check(update, context):
+    global ig_session_file, ig_session_USER
+    messeger = str((update._effective_user['id']))
+    #ig_session_file = messeger+"#"+ig_session_USER+".session"
+    igusername = []
+    igactivestatus = False
+    for files in os.listdir():
+        if files.endswith('session'):
+            igusernames = files.split("#")
+            if igusernames[0]==messeger:
+                igusername.append((igusernames[1])[:-8])
+    if len(igusername) >= 1:
+        a = 0
+        igusrformat = ''
+        for listedigusername in igusername:
+            igusrformat = igusrformat + "    • " +listedigusername+"\n"
+            print ("Ig sesssion : "+ ig_session_USER)
+            print ("listed one : "+ listedigusername)
+            if ig_session_USER == listedigusername:
+                igactivestatus = True
+    return igactivestatus
+
+async def login_from_saved_sessions(update, context):
+    global ig_session_file, ig_session_USER
+    messeger = str((update._effective_user['id']))
+    #ig_session_file = messeger+"#"+ig_session_USER+".session"
+    igusername = []
+    igactivestatus = False
+    for files in os.listdir():
+        if files.endswith('session'):
+            igusernames = files.split("#")
+            if igusernames[0]==messeger:
+                igusername.append((igusernames[1])[:-8])
+    if len(igusername)>= 1:
+        ig_session_USER = igusername[0]
+        ig_session_file = messeger + "#"+ig_session_USER+".session"
+        return ig_session_USER,ig_session_file
+    else:
+        return False
+
+async def main_url_dl(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    messeger = str((update._effective_user['id']))
+    global ig_session_file, ig_session_USER
+    ig_session_file = messeger+"#"+ig_session_USER+".session"
+    if await ig_session_check(update, context) == False:
+        try:
+            ig_session_USER,ig_session_file = login_from_saved_sessions(update, context)
+        except BaseException:
+            ig_session_USER,ig_session_file = '',''
+            print("User not registered for posts downloads.")
     clean_clutter()
     string = update.message.text
     print(string)
@@ -490,17 +574,19 @@ def main() -> None:
     application.add_handler(CommandHandler("clean", clean))
     #Instagram Logins
     application.add_handler(CommandHandler("iglogin", iglogin))
-    application.add_handler(CommandHandler("igusername", igusername))
-    application.add_handler(CommandHandler("igpassword", igpassword))
     application.add_handler(CommandHandler("iglogout", iglogout))
     application.add_handler(CommandHandler("igcheck", igcheck))
     application.add_handler(CommandHandler("igstories", igstories))
-
+    application.add_handler(CommandHandler("igsession", sessiongen))
+    application.add_handler(CommandHandler("rmigsession", rmsessionfile))
     #youtube music
     application.add_handler(CommandHandler("ytaudio", yt_audio))
 
     #For other links
-    application.add_handler(MessageHandler(filters.Regex('([^\s\.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})') & ~filters.COMMAND, download))
+    application.add_handler(MessageHandler(filters.Regex('([^\s\.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})') & ~filters.COMMAND, main_url_dl))
+
+    #sessionfile watcher
+    application.add_handler(MessageHandler(filters.Document.FileExtension("session"), sessiondownload))
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling()
